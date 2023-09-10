@@ -10,34 +10,27 @@
 
 
 
-//fuction prints error message
-void errormessage(){
+
+void handleError(){
 	
 	char error_message[30] = "An error has occurred\n";
 	write(STDERR_FILENO, error_message, strlen(error_message));
 
 }
 
-//function return array of path with size at index 0
-char** path(char **pieces){
-	char** directories;
-	directories = malloc(sizeof(int*) * 50);
-	for(int i=0;i<50;i++){
-		directories[i]=malloc(sizeof(int*) * 50);
-	}
-	for(int i=2;i<atoi(pieces[0])+1;i++){
-		 
-		strcpy(directories[i-1],pieces[i]);
-		
-	}
-	char * temp;
-	temp = malloc(sizeof(int*)*50);
-	sprintf(temp,"%d", atoi(pieces[0])-1);
-	strcpy(directories[0],temp);
-	return directories;
+
+void changedir(char* path){	
+
+if(	chdir(path)!=0){
+
+	handleError();
+	}											
 }
 
-//function reads input from file
+
+
+
+
 char **readFromfile(char *input,char *argv[]){
     
 	char **arr;
@@ -47,17 +40,17 @@ char **readFromfile(char *input,char *argv[]){
         arr[i] = malloc(sizeof(int*) * 100);
     }
 	
-	//open file
+	
     FILE *in_file=fopen(argv[1],"r");
     
-    //if file not found
+    
     if(in_file==NULL){
     
-    	errormessage();
+    	handleError();
     	exit(1);
 	}
 	
-	//read strings in a file
+	
 	int index=1;
 	while(fgets(input, 50, in_file) != NULL){					
 		strcpy(arr[index],input);
@@ -75,8 +68,7 @@ char **readFromfile(char *input,char *argv[]){
 	return arr;
 }
 
-//function splits string into pieces according to spaces tabs and new lines
-char **splitIntoPieces(char *input){
+char **splitChunks(char *input){
 	
   	char **pieces;
   	char *chunk;
@@ -86,7 +78,7 @@ char **splitIntoPieces(char *input){
         pieces[i] = malloc(sizeof(int*) * 20);
     }
 	
-	//splitting string	
+
   	int index=1;
 	while((chunk=strsep(&input,"\t \n")) !=NULL){ 				
 		
@@ -102,8 +94,27 @@ char **splitIntoPieces(char *input){
   	return pieces;
 }
 
-//fuction splits input according to redirection sign >
-char *splitIntoRedirection(char *input){
+
+char** path(char **chunks){
+	char** dir;
+	dir = malloc(sizeof(int*) * 50);
+	for(int i=0;i<50;i++){
+		dir[i]=malloc(sizeof(int*) * 50);
+	}
+	for(int i=2;i<atoi(chunks[0])+1;i++){
+		 
+		strcpy(dir[i-1],chunks[i]);
+		
+	}
+	char * temp;
+	temp = malloc(sizeof(int*)*50);
+	sprintf(temp,"%d", atoi(chunks[0])-1);
+	strcpy(dir[0],temp);
+	return dir;
+}
+
+
+char *redirectionSplit(char *input){
 	
   	char **pieces;
   	char *chunk;
@@ -113,7 +124,7 @@ char *splitIntoRedirection(char *input){
         pieces[i] = malloc(sizeof(int*) * 20);
     }
 	
-	//splitting string	
+
   	int index=1;
 	while((chunk=strsep(&input,">")) !=NULL){ 				
 		
@@ -136,9 +147,18 @@ char *splitIntoRedirection(char *input){
   	return cpy;
   	
 }
+bool checkRedirection(char* cpy){
+	
+	for(int k=0;k<strlen(cpy);k++){
+					if(cpy[k]=='>'){
+						return true;
+					}
+					
+				}
+				return false;
+}
 
-//function splits string according to ampersand
-char ** splitAmpersand(char *input){
+char ** ampersandSplitting(char *input){
 	char ** pieces;
 	char* parrComponent;
 	pieces = malloc (sizeof(int*)* 50);
@@ -162,22 +182,14 @@ char ** splitAmpersand(char *input){
 	
 }
 
-//function to change directory
-void changedir(char* path){	
 
-if(	chdir(path)!=0){
 
-	errormessage();
-	}											
-}
-
-//function to check if redirection signs are placed properly
 bool checkFormat(char* input){
 		char* tmp;
 		tmp = malloc(sizeof(int*)* 50);
 			
 		strcpy(tmp,input);
-		char** pieces = splitIntoPieces(tmp);
+		char** pieces = splitChunks(tmp);
 		int count=0;
 			
 		for(int i=0;i<strlen(input);i++){
@@ -212,33 +224,24 @@ bool checkFormat(char* input){
 				}
 
 
-//check presence of redirection sign
-bool checkRedirection(char* cpy){
-	
-	for(int k=0;k<strlen(cpy);k++){
-					if(cpy[k]=='>'){
-						return true;
-					}
-					
-				}
-				return false;
-}
 
-//main function that return array of paths and responsible for executing the commands
-char ** run(char* buffer, char** pathArr){
+
+
+
+char ** run(char* buffer, char** arrayPath){
 	
 
-			//set to true if ampersand next to each other
+			
 	    	int temp=0;
 	    	
-	    	//allocate space to store array of commands
+	    	
 	    	char** parrParts;
 	    	parrParts = malloc(sizeof(int*)* 50);
 	    	for(int i=0;i<50;i++){
 	    		parrParts[i]=malloc(sizeof(int*)* 50);
 			}
 			
-			//alloacate array to store componets that have to be executed in parallel
+			
 	    	char** parrPartsOutCommands;
 	    	parrPartsOutCommands = malloc(sizeof(int*)* 50);
 	    	for(int i=0;i<50;i++){
@@ -246,7 +249,7 @@ char ** run(char* buffer, char** pathArr){
 			}
 	    	
 	    	
-	    	//check for error in input, if everything is good put component in array of commands
+	    	
 	    	if(buffer[0]=='&' && strlen(buffer)!=2){
 	    		temp = 1;
 	    		
@@ -273,51 +276,51 @@ char ** run(char* buffer, char** pathArr){
 				
 			
 		}
-			//set index for array of commands you want to run in parallel
+			
 			int indexOutCommands = 0;
 			
-			//if input is okay
+			
 			if(temp == 0){
 				
-				//split the input using ampersand
-				parrParts = splitAmpersand(buffer);
+				
+				parrParts = ampersandSplitting(buffer);
 				
 			
 				
 			
-			//Process each parallel component in this loop
+			
 			for(int i=1;i<atoi(parrParts[0])+1; i++){
 				
 				
-				//allocate and copy each command part into cpy
+				
 				char *cpy=malloc(sizeof(int*)* 50);
 				strcpy(cpy,parrParts[i]);
 				
-				//split the copy of the part and store in pieces array 
-				char **pieces=splitIntoPieces(cpy);
+				
+				char **pieces=splitChunks(cpy);
 				
 				
-				//check if the command is empty and if its not proceed
+				
 				if(strcmp(pieces[0], "0") != 0){
-					//printf("%d\n",atoi(pieces[0]));
+					
 				
 				
-				//check if cammand is built in and if it is proceed to process the built in command if its not add it to the array of non built in commands
+				
 				if(strcmp(pieces[1], "exit")==0 || strcmp(pieces[1], "cd")==0  || strcmp(pieces[1], "path")==0){
 					
 					
-					//exit command
+					
 					if(strcmp(pieces[1], "exit") == 0){			
 						if(atoi(pieces[0])==1){
 							exit(0);
 						}else{
 						
-							errormessage();
+							handleError();
 						}
 		    		
 		    		
 					}
-					//path command empties the pathArray if the command is just path or adds the path to array if given any path
+					
 					else if(strcmp(pieces[1], "path") == 0){
 					
 						if(strcmp(pieces[0], "1") == 0){
@@ -328,17 +331,17 @@ char ** run(char* buffer, char** pathArr){
 									pathArr2[i]=malloc(sizeof(int*) * 50);
 								}
 								sprintf(pathArr2[0],"%d",0);
-							pathArr = pathArr2;
+							arrayPath = pathArr2;
 																		
 						
 						}
 						
 						else{
 							
-							pathArr =path(pieces);
+							arrayPath =path(pieces);
 						}
 				}
-				//cd command 
+				
 				else if(strcmp(pieces[1], "cd") == 0){
 					
 					if(strcmp(pieces[0], "2") == 0){							
@@ -348,22 +351,22 @@ char ** run(char* buffer, char** pathArr){
 					}
 					else{	
 																
-						errormessage();
+						handleError();
 					}
 				}
 					
 			}
 				
 		    	
-				//if it is not a built-in command exit,cd or path,print error message
-			else if(strcmp(pathArr[0],"0")!=0){
+				
+			else if(strcmp(arrayPath[0],"0")!=0){
 				
 					
 					if(checkFormat(buffer)){
 						
-						errormessage();
+						handleError();
 					}else{
-						//add commands to array of non parallel commands
+						
 						parrPartsOutCommands[indexOutCommands]=parrParts[i];
 						indexOutCommands++;
 				
@@ -373,7 +376,7 @@ char ** run(char* buffer, char** pathArr){
 				}
 				else{
 					
-					errormessage();
+					handleError();
 				}
 				
 					
@@ -385,18 +388,17 @@ char ** run(char* buffer, char** pathArr){
 				
 			}else{
 				
-				errormessage();
+				handleError();
 				
 			}	
 		
 			
-		//initilis list to store process id of command running in parallel	
 		int pidList[indexOutCommands];
 			int trackChildren=0;
 		for(int i=0;i<indexOutCommands;i++){
 			
 				
-				//split the paralle commands 
+				
 		
 				char* cpy=malloc(sizeof(int*) * 50);
 				strcpy(cpy,parrPartsOutCommands[i]);
@@ -406,24 +408,24 @@ char ** run(char* buffer, char** pathArr){
 				
 				bool found=false;
 				
-					char** pieces = splitIntoPieces(parrPartsOutCommands[i]);
-					for(int j=1; j<atoi(pathArr[0])+1; j++){
+					char** pieces = splitChunks(parrPartsOutCommands[i]);
+					for(int j=1; j<atoi(arrayPath[0])+1; j++){
 						if(!found){
 								
-								//for everuthing in array of paths intilise a new path copy path array of paths concatenate / and the command to be executued
+								
 								char* newPath=malloc(sizeof(int*)* 50);
-								strcpy(newPath, pathArr[j]);
+								strcpy(newPath, arrayPath[j]);
 								if(newPath[strlen(newPath)-1]!='/'){
 									strcat(newPath, "/");
 								}
 								
 								strcat(newPath,pieces[1]);
 								
-								//check if the command path/cmd exists and is okay
+								
 								if(access(newPath,X_OK)==0){
 									found=true;
 									
-									//create child process to run command and store the process id in the of process id's
+									
 									int pid = fork();
 									if(pid==0){
 										trackChildren++;
@@ -434,7 +436,7 @@ char ** run(char* buffer, char** pathArr){
 											
 											
 											
-											char** pieces2 = splitIntoPieces(splitIntoRedirection(cpy));
+											char** pieces2 = splitChunks(redirectionSplit(cpy));
 											
 											args = malloc(sizeof(int*)* atoi(pieces2[0])-1);
 											
@@ -488,7 +490,7 @@ char ** run(char* buffer, char** pathArr){
 							}
 							if(!found){
 								
-								errormessage();
+								handleError();
 							}
 				
 		
@@ -501,7 +503,7 @@ char ** run(char* buffer, char** pathArr){
 			int status=0;
 			while((wpid=wait(&status))>0);
 		
-			return pathArr;
+			return arrayPath;
 
 }
 
@@ -512,74 +514,69 @@ char ** run(char* buffer, char** pathArr){
 int main(int argc, char *argv[]){
 
 	
-	
-	//allocate space for array to store the different paths you need to find an executable										
-	char** pathArr;
-	pathArr = malloc(sizeof(int*) * 50);
+											
+	char** arrayPath;
+	arrayPath = malloc(sizeof(int*) * 50);
 	for(int i=0;i<50;i++){
-		pathArr[i]=malloc(sizeof(int*) * 50);
+		arrayPath[i]=malloc(sizeof(int*) * 50);
 	}
 	
 	
-	//initilise the path Array with bin
-	sprintf(pathArr[0],"%s", "1");
-	sprintf(pathArr[1],"%s", "/bin/");
+	sprintf(arrayPath[0],"%s", "1");
+	sprintf(arrayPath[1],"%s", "/bin/");
 	
 	
-	//allocate space input line
+	
 	char* buffer;
 	size_t bufsize = 20;
 	buffer = malloc(sizeof(int*)* bufsize);
 	
-	//check if we in Iterarive mode if True
+	
 	if(argc<=1){														
 	
 	
-		//strart iterative mode by taking input
+		
 	    printf("%s", "witsshell> ");
 	    
 	    
-	    //EOF marker
-		int i=getline (&buffer, &bufsize, stdin);
+	    
+		int k=getline (&buffer, &bufsize, stdin);
 		
 		
 		
-		//Enter loop to take and process commands
+		
 	    while(1){
 	    	
-	    	if(i==-1){
+	    	if(k==-1){
 			exit(0);
 			}
 			if(strcmp(buffer," ")!=0 && strcmp(buffer,"\n")){
-				pathArr=run(buffer, pathArr);
+				arrayPath=run(buffer, arrayPath);
 			
 			}
 	    	
 	    	
 			printf("%s", "witsshell> ");
-			i=getline (&buffer, &bufsize, stdin);		
+			k=getline (&buffer, &bufsize, stdin);		
 			}
 		
 			
 	    	
 		}				
-		//	if we are in batch mode
+		
 		else{
 			if(argc!=2){
 				
-				errormessage();
+				handleError();
 				exit(1);
 			}
-		//read input from file
+		
 		char **arr=readFromfile(buffer,argv);
-		
-		//printf("%s\n",arr[0]);
-		
-		//split each string in the file into pieces
+	
 		char **pieces;
 		for(int i=1;i<atoi(arr[0])+1;i++){
-			//printf("%s\n",arr[i]);
-			pathArr=run(arr[i],pathArr);
+			
+			arrayPath=run(arr[i],arrayPath);
 			
 		}
 		
